@@ -1,0 +1,8 @@
+- Implement the 'splitter' - functionality that allows to split files from 'runs' directory into what-where parts.
+
+- Implement 'runs_splitted' processor. It should produce 'report_meta' directory, with all data needed to make the report.
+
+- Implement HTML report formatter.
+
+- Implement TXT report formatter.
+

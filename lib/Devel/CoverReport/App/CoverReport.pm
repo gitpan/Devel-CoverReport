@@ -1,17 +1,17 @@
-package Devel::CoverReport::App::CoverReport;
-
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
+
+package Devel::CoverReport::App::CoverReport;
 
 use strict;
 use warnings;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
-use Devel::CoverReport 0.01;
+use Devel::CoverReport 0.02;
 
 use Carp;
 use Getopt::Long 2.36 qw( GetOptionsFromArray );
@@ -111,7 +111,7 @@ sub main { # {{{
         pod2usage( { -verbose => 1 } );
     }
     if ($raw_options{'version'} or $raw_options{'V'}) {
-        print "cover_report V$VERSION Copyright 2009 Bartłomiej Syguła (natanael\@natanael.krakow.pl)\n";
+        print "cover_report V$VERSION Copyright 2009-2010 Bartłomiej Syguła (natanael\@natanael.krakow.pl)\n";
         exit;
     }
 
@@ -228,5 +228,19 @@ sub cover_run_options { # {{{
     return %run_options;
 } # }}}
 
-# vim: fdm=marker
 1;
+
+=back
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
+=cut
+
+# vim: fdm=marker
+

@@ -1,15 +1,15 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport::Formatter::Html;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use base 'Devel::CoverReport::Formatter';
 
@@ -17,6 +17,8 @@ use Carp::Assert::More qw( assert_defined );
 use English qw( -no_match_vars );
 use File::Slurp qw( write_file );
 use Params::Validate qw( :all );
+
+=encoding UTF-8
 
 =head1 DESCRIPTION
 
@@ -111,7 +113,12 @@ sub process_table_start { # {{{
 sub process_row { # {{{
     my ( $self, $report, $table, $row ) = @_;
 
-    push @{ $self->{'Instance'}->{'html'} }, q{<tr>};
+    if ($row->{'_class'}) {
+        push @{ $self->{'Instance'}->{'html'} }, q{<tr class=}. $row->{'_class'} .q{>};
+    }
+    else {
+        push @{ $self->{'Instance'}->{'html'} }, q{<tr>};
+    }
     
     $self->_process_in_row($report, $table, $row, 'f');
 
@@ -256,6 +263,17 @@ sub _html_quote { # {{{
 } # }}}
 
 1;
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
+=cut
+
 __DATA__
 body {
     font-family: sans-serif;
@@ -266,6 +284,7 @@ body {
 table {
    border-collapse: collapse;
    border-spacing: 0px;
+   margin: 5px 5px 15px 5px;
 }
 tr {
    text-align : center;
@@ -279,18 +298,24 @@ th, .head {
 td {
    border: solid 1px #ccc;
 }
-tr.summary {
+tr.summary,
+tr.partial_summary {
    border-top: solid 1px #111;
 }
-tr.summary td {
+tr.summary td,
+tr.partial_summary td {
    text-align: left;
    border-top: solid 1px #111;
    background-color: #eee
 }
-tr.summary td.head {
+tr.summary td.head,
+tr.partial_summary td.head {
    text-align: center;
    border-top: solid 1px #111;
    background-color: #aaa
+}
+tr.partial_summary {
+    color: #444;
 }
 .footer {
     margin: 5px;
@@ -328,6 +353,7 @@ a:link, a:hover, a:active, a:visited {
     display: block;
     text-align: right;
     padding: 0 1px;
+    color: black;
 }
 .c0 {
 	background-color: #f99;

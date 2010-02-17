@@ -3,6 +3,45 @@ data:
   tables: 
     - 
       headers: 
+        coverable: 
+          caption: Coverable
+          f: "%d"
+          fs: ''
+        coverage: 
+          caption: Coverage
+          f: "%.1f%%"
+          fs: "%.1f%%"
+        covered: 
+          caption: Covered
+          f: "%d"
+          fs: ''
+        criterion: 
+          caption: Criterion
+          class: head
+          f: "%s"
+          fs: "%s"
+      headers_order: 
+        - criterion
+        - coverable
+        - covered
+        - coverage
+      label: "Coverage summary:"
+      rows: 
+        - 
+          coverable: 107
+          coverage: 
+            class: c3
+            v: 91.588785046729
+          covered: 98
+          criterion: Statement
+      summary: 
+        - 
+          coverage: 
+            class: c3
+            v: 91.588785046729
+          criterion: Overall coverage
+    - 
+      headers: 
         branch: 
           caption: Br.
           f: "%d%%"
@@ -67,6 +106,14 @@ data:
             class: c0
             v: 0
         - 
+          _class: partial_summary
+          file: 
+            v: lib/Sample/Simple
+          runs: ~
+          statement: 
+            class: c2
+            v: 76.9230769230769
+        - 
           file: 
             href: t-Bar-t
             v: t/Bar.t
@@ -106,6 +153,14 @@ data:
           statement: 
             class: c4
             v: 100
+        - 
+          _class: partial_summary
+          file: 
+            v: t
+          runs: ~
+          statement: 
+            class: c4
+            v: 100
       summary: 
         - 
           file: 
@@ -116,4 +171,4 @@ data:
             v: 91.588785046729
 metadata: 
   title: Coverage summary
-  version: 0.01
+  version: 0.02

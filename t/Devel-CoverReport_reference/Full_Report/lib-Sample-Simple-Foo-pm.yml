@@ -3,6 +3,73 @@ data:
   tables: 
     - 
       headers: 
+        coverable: 
+          caption: Coverable
+          f: "%d"
+          fs: ''
+        coverage: 
+          caption: Coverage
+          f: "%.1f%%"
+          fs: "%.1f%%"
+        covered: 
+          caption: Covered
+          f: "%d"
+          fs: ''
+        criterion: 
+          caption: Criterion
+          class: head
+          f: "%s"
+          fs: "%s"
+      headers_order: 
+        - criterion
+        - coverable
+        - covered
+        - coverage
+      label: "Coverage summary:"
+      rows: 
+        - 
+          coverable: 9
+          coverage: 
+            class: c0
+            v: 0
+          covered: 0
+          criterion: Statement
+        - 
+          coverable: 1
+          coverage: 
+            class: c0
+            v: 0
+          covered: 0
+          criterion: Subroutine
+        - 
+          coverable: 1
+          coverage: 
+            class: c0
+            v: 0
+          covered: 0
+          criterion: POD
+        - 
+          coverable: 6
+          coverage: 
+            class: c0
+            v: 0
+          covered: 0
+          criterion: Branch
+        - 
+          coverable: 6
+          coverage: 
+            class: c0
+            v: 0
+          covered: 0
+          criterion: Condition
+      summary: 
+        - 
+          coverage: 
+            class: c0
+            v: 0
+          criterion: Overall coverage
+    - 
+      headers: 
         branch: 
           caption: Br.
           f: "%d%%"
@@ -586,4 +653,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: lib/Sample/Simple/Foo.pm"
-  version: 0.01
+  version: 0.02

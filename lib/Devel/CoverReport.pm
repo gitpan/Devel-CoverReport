@@ -1,18 +1,17 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport;
 
-use strict;
-use warnings;
+use strict; use warnings;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
-use Devel::CoverReport::DB 0.01;
-use Devel::CoverReport::Feedback 0.01;
+use Devel::CoverReport::DB 0.02;
+use Devel::CoverReport::Feedback 0.02;
 
 use Carp::Assert::More qw( assert_defined assert_hashref assert_listref );
 use Digest::MD5 qw( md5_hex );
@@ -21,6 +20,8 @@ use File::Slurp qw( read_file );
 use Params::Validate qw( :all );
 use Storable;
 use YAML::Syck qw( DumpFile LoadFile );
+
+=encoding UTF-8
 
 =head1 NAME
 
@@ -88,7 +89,7 @@ sub new { # {{{
             mention_dir => { type=>ARRAYREF },
             mention_re  => { type=>ARRAYREF },
 
-            jobs => { type=>SCALAR, optional=>1 },
+            jobs => { type=>SCALAR, optional=>1, default=>1 },
         }
     );
 
@@ -137,8 +138,9 @@ sub new { # {{{
         jobs => undef,
 
         summary => {
-            files => {},
-            total => {}
+            files   => {},
+            folders => {},
+            total   => {},
         }
     };
 
@@ -147,7 +149,7 @@ sub new { # {{{
 
     # fixme! ensure, that objects have been created!
     
-    if ($P{'jobs'} > 1) {
+    if ($P{'jobs'} and $P{'jobs'} > 1) {
         my %jobs = (
             max_count => int $P{'jobs'},
 
@@ -248,28 +250,13 @@ sub make_report { # {{{
 
     $self->{'feedback'}->info("Writing summary...");
 
-    my %total_summary_row = (
-        'file' => { v=>'Total coverage' },
-        'runs' => undef,
+    my $total_summary_row = $self->_compose_summary_row(
+        label  => 'Total coverage',
+        source => $self->{'summary'}->{'total'},
     );
 
-    foreach my $criterion (qw( statement subroutine pod branch condition time )) {
-        if ($self->{'criterion-enabled'}->{$criterion}) {
-            my $coverage = 0;
-
-            if ($self->{'summary'}->{'total'}->{$criterion}->{'count_coverable'}) {
-                $coverage = 100 * $self->{'summary'}->{'total'}->{$criterion}->{'count_covered'} / $self->{'summary'}->{'total'}->{$criterion}->{'count_coverable'};
-            }
-
-            $total_summary_row{$criterion} = {
-                class => c_class($coverage),
-                v     => $coverage,
-            };
-        }
-    }
-
     my $summary_report = $self->make_summary_report(
-        \%total_summary_row,
+        $total_summary_row,
     );
 
     $self->{'feedback'}->note("Report: ". $summary_report);
@@ -279,6 +266,44 @@ sub make_report { # {{{
     return 0;
 } # }}}
 
+# Fixme: documentation would be a nice idea here :)
+
+sub _compose_summary_row { # {{{
+    my ( $self, %P ) = @_;
+
+    assert_defined($P{'label'}, "Missing label.");
+    assert_hashref($P{'source'}, "Source must be a hashref.");
+
+    my %summary_row = (
+        'file' => { v=>$P{'label'} },
+        'runs' => undef,
+    );
+
+    if ($P{'class'}) {
+        $summary_row{'_class'} = $P{'class'};
+    }
+
+    foreach my $criterion (qw( statement subroutine pod branch condition time )) {
+        if ($self->{'criterion-enabled'}->{$criterion}) {
+            my $coverage = 0;
+
+            if ($P{'source'}->{$criterion}->{'count_coverable'}) {
+                $coverage = 100 * $P{'source'}->{$criterion}->{'count_covered'} / $P{'source'}->{$criterion}->{'count_coverable'};
+            }
+
+            $summary_row{$criterion} = {
+                class => c_class($coverage),
+                v     => $coverage,
+            };
+
+            $P{'source'}->{$criterion}->{'coverage'} = $coverage;
+        }
+    }
+
+    return \%summary_row;
+} # }}}
+
+# Fixme: documentation would be a nice idea here :)
 
 sub _make_in_paralel { # {{{
     my ($self, $digest_to_run) = @_;
@@ -316,6 +341,8 @@ sub _make_in_paralel { # {{{
     return;
 } # }}}
 
+# Fixme: documentation would be a nice idea here :)
+
 sub _job_fork { # {{{
     my ($self, $digest, $digest_to_runs) = @_;
 
@@ -331,6 +358,13 @@ sub _job_fork { # {{{
 
         # Turn on output buffer, we do not want to print when not asked for....
         $self->{'feedback'}->enable_buffer();
+        
+        # Reset summary data, it may contain stuff, that our parent has acumulated.
+        $self->{'summary'} = {
+            files   => {},
+            folders => {},
+            total   => {},
+        };
 
         my $structure_data = $self->{'db'}->get_structure_data($digest);
 
@@ -340,7 +374,9 @@ sub _job_fork { # {{{
             classification => 'ERROR',
             feedback       => undef,
 
-            item_summary  => undef,
+            folders => undef,
+
+            file_summary  => undef,
             total_summary => undef,
         };
 
@@ -356,18 +392,25 @@ sub _job_fork { # {{{
             $self->_job_done();
         }
 
+        # Validator can only detect _problems_
+        # So, if it returns undef - everything is all right, no issues found.
         my $new_classification = $self->validate_digest($structure_data);
         if ($new_classification) {
-            $self->{'child_report'}->{'clasification'} = $new_classification;
+            $self->{'child_report'}->{'classification'} = $new_classification;
 
             $self->_job_done();
         }
+        else {
+            $self->{'child_report'}->{'classification'} = 'OK';
+        }
 
-        my $ok = $self->analyse_digest($digest_to_runs, $digest, $structure_data);
+        $self->analyse_digest($digest_to_runs, $digest, $structure_data);
 
         # Pass summaries to the report, so parent can generate it's index properly.
-        $self->{'child_report'}->{'item_summary'}  = $self->{'summary'}->{'files'}->{$digest};
-        $self->{'child_report'}->{'total_summary'} = $self->{'summary'}->{'total'};
+        $self->{'child_report'}->{'file_summary'}   = $self->{'summary'}->{'files'}->{$digest};
+        $self->{'child_report'}->{'total_summary'}  = $self->{'summary'}->{'total'};
+
+        $self->{'child_report'}->{'folders'} = $self->{'summary'}->{'folders'};
 
         return $self->_job_done();
     }
@@ -376,6 +419,8 @@ sub _job_fork { # {{{
 
     return;
 } # }}}
+
+# Fixme: documentation would be a nice idea here :)
 
 sub _job_done { # {{{
     my ($self) = @_;
@@ -387,6 +432,8 @@ sub _job_done { # {{{
     # Childs exit, not return...
     return exit 0;
 } # }}}
+
+# Fixme: documentation would be a nice idea here :)
 
 sub _job_wait { # {{{
     my ($self) = @_;
@@ -402,13 +449,28 @@ sub _job_wait { # {{{
     my $report_file_name = $self->{'jobs'}->{'spool_dir'} . $pid . q{-cover_report-CR.yml};
 
     my $child_report = LoadFile($report_file_name);
-
+    
     # Print child's buffered output.
     $self->{'feedback'}->pass_buffer( $child_report->{'feedback'} );
 
     # Integrate child's item's summary into our data structure.
-    if ($child_report->{'item_summary'}) {
-        $self->{'summary'}->{'files'}->{$digest} = $child_report->{'item_summary'};
+    if ($child_report->{'file_summary'}) {
+        $self->{'summary'}->{'files'}->{$digest} = $child_report->{'file_summary'};
+
+        # Merge per-folder sub-summary data:
+        foreach my $folder (keys %{ $child_report->{'folders'} }) {
+            foreach my $criterion (qw( statement branch condition subroutine pod time )) {
+                if ($child_report->{'folders'}->{$folder}->{$criterion}->{'count_coverable'}) {
+                    $self->{'summary'}->{'folders'}->{$folder}->{$criterion}->{'count_coverable'} += $child_report->{'folders'}->{$folder}->{$criterion}->{'count_coverable'};
+                    $self->{'summary'}->{'folders'}->{$folder}->{$criterion}->{'count_covered'}   += $child_report->{'folders'}->{$folder}->{$criterion}->{'count_covered'};
+                }
+            }
+            
+#            warn $folder;
+            if ($child_report->{'folders'}->{$folder}->{'_files'}) {
+                $self->{'summary'}->{'folders'}->{$folder}->{'_files'} += $child_report->{'folders'}->{$folder}->{'_files'};
+            }
+        }
     }
 
     # Integrate child's portion of total summary into our data structure.
@@ -426,6 +488,8 @@ sub _job_wait { # {{{
 
     return $pid;
 } # }}}
+
+# Fixme: documentation would be a nice idea here :)
 
 sub _make_in_sequence { # {{{
     my ($self, $digest_to_run) = @_;
@@ -449,7 +513,7 @@ sub _make_in_sequence { # {{{
             next;
         }
 
-        my $ok = $self->analyse_digest($digest_to_run->{$digest}, $digest, $structure_data);
+        $self->analyse_digest($digest_to_run->{$digest}, $digest, $structure_data);
     }
 
     $self->{'feedback'}->file_off();
@@ -562,8 +626,7 @@ Parameters: (ARRAY)
  $runs   - array of run IDs, that are related to this file (runs, that cover this file)
  $digest - file's ID, assigned to it by Devel::Cover
 
-Returns: (ARRAY)
- \%summary_metadata,
+Returns: nothing
 
 =cut
 sub analyse_digest { # {{{
@@ -584,6 +647,12 @@ sub analyse_digest { # {{{
         code     => $digest,
         basename => namify_path($structure_data->{'file'}),
         title    => 'Coverage: ' . $structure_data->{'file'},
+    );
+    
+    # Do overall-summary table.
+    $self->make_generic_summary(
+        report       => $digest,
+        item_summary => $item_summary
     );
 
     if ($self->_do_branch()) {
@@ -632,6 +701,8 @@ sub analyse_digest { # {{{
         'subroutine' => namify_path($structure_data->{'file'}) .'-subroutine',
     );
 
+    my ($class_folder) = ( $structure_data->{'file'} =~ m{^(.+?)(\..+?)$} );
+
     foreach my $criterion (qw( statement branch condition subroutine pod time )) {
         if ($self->{'criterion-enabled'}->{$criterion} and defined $item_summary->{$criterion}->{'coverage'}) {
             $item_summary_row{$criterion} = {
@@ -643,9 +714,33 @@ sub analyse_digest { # {{{
                 $item_summary_row{$criterion}->{'href'} = $hrefs{$criterion};
             }
 
-            # Append to total summary as well.
+            # Append to total and folder summary as well.
             $self->{'summary'}->{'total'}->{$criterion}->{'count_coverable'} += $item_summary->{$criterion}->{'count_coverable'};
             $self->{'summary'}->{'total'}->{$criterion}->{'count_covered'}   += $item_summary->{$criterion}->{'count_covered'};
+
+            $self->{'summary'}->{'folders'}->{$class_folder}->{$criterion}->{'count_coverable'} += $item_summary->{$criterion}->{'count_coverable'};
+            $self->{'summary'}->{'folders'}->{$class_folder}->{$criterion}->{'count_covered'}   += $item_summary->{$criterion}->{'count_covered'};
+        }
+    }
+
+    $self->{'summary'}->{'folders'}->{$class_folder}->{'_files'}++;
+
+    # Propagate folder-related stats down the tree.
+    # This way folder A/ will contain summary stats from A/B/ and A/C/,
+    # even if there are no files in A/
+    my $folder_summary = $self->{'summary'}->{'folders'}->{$class_folder};
+    my $once = 0;
+    while ($class_folder =~ s{/[^/]+$}{}) {
+        foreach my $criterion (qw( statement branch condition subroutine pod time )) {
+            if ($self->{'criterion-enabled'}->{$criterion} and defined $folder_summary->{$criterion}->{'count_coverable'}) {
+                $self->{'summary'}->{'folders'}->{$class_folder}->{$criterion}->{'count_coverable'} += $folder_summary->{$criterion}->{'count_coverable'};
+                $self->{'summary'}->{'folders'}->{$class_folder}->{$criterion}->{'count_covered'}   += $folder_summary->{$criterion}->{'count_covered'};
+            }
+        }
+
+        if (not $once) {
+            $self->{'summary'}->{'folders'}->{$class_folder}->{'_files'}++;
+            $once = 1;
         }
     }
 
@@ -748,6 +843,91 @@ sub _empty_hits_container { # {{{
         $container{$condition} = [];
     }
     return \%container;
+} # }}}
+
+=item make_generic_summary
+
+Prepare table, which shows, for each metric:
+ - coverable items
+ - covered items
+ - coverage (in percent)
+
+Parameters: ($self + HASH)
+    item_summary   - data for the summary row
+
+=cut
+sub make_generic_summary { # {{{
+    my $self = shift;
+    my %P = @_;
+    validate (
+        @_,
+        {
+            report       => { type=>SCALAR },
+            item_summary => { type=>HASHREF },
+        }
+    );
+
+    my $summary_table = $self->{'formatter'}->add_table(
+        $P{'report'},
+        'CoverOv',
+        {
+            label   => 'Coverage summary:',
+            headers => {
+                'criterion' => { caption=>'Criterion', f=>q{%s}, fs=>q{%s}, class=>'head' },
+
+                'coverable'  => { caption=>'Coverable', f=>q{%d},     fs=>q{} },
+                'covered'    => { caption=>'Covered',   f=>q{%d},     fs=>q{} },
+                'coverage'   => { caption=>'Coverage',  f=>q{%.1f%%}, fs=>q{%.1f%%} },
+            },
+            headers_order => [qw( criterion coverable covered coverage )],
+        }
+    );
+
+    my %labels = (
+        'statement'  => 'Statement',
+        'branch'     => 'Branch',
+        'condition'  => 'Condition',
+        'subroutine' => 'Subroutine',
+        'pod'        => 'POD',
+    );
+
+    my ($coverage_sum, $coverage_count) = (0, 0);
+    foreach my $criterion (@{ $self->{'criterion-order'} }) {
+        # Skip criterions, that are not labeled, like: Time.
+        if (not $labels{$criterion}) {
+            next;
+        }
+
+        $coverage_sum  += ( $P{'item_summary'}->{$criterion}->{'coverage'} or 0);
+        $coverage_count++;
+
+        my %row = (
+            criterion => $labels{$criterion},
+
+            coverable => $P{'item_summary'}->{$criterion}->{'count_coverable'},
+            covered   => $P{'item_summary'}->{$criterion}->{'count_covered'},
+            coverage  => {
+                class => c_class($P{'item_summary'}->{$criterion}->{'coverage'}),
+                v     => $P{'item_summary'}->{$criterion}->{'coverage'},
+            }
+        );
+
+        $summary_table->add_row(\%row);
+    }
+
+    my $overall_coverage = $coverage_sum / $coverage_count;
+    my %row = (
+        criterion => 'Overall coverage',
+
+        coverage  => {
+            class => c_class($overall_coverage),
+            v     => $overall_coverage,
+        }
+    );
+
+    $summary_table->add_summary(\%row);
+
+    return;
 } # }}}
 
 =item make_runs_details
@@ -918,7 +1098,7 @@ sub make_coverage_summary { # {{{
                 'statement'  => { caption=>'St.',   f=>q{%d},    fs=>q{%.1f%%} },
                 'branch'     => { caption=>'Br.',   f=>q{%d},    fs=>q{%.1f%%} },
                 'condition'  => { caption=>'Cond.', f=>q{%d},    fs=>q{%.1f%%} },
-                'subroutine' => { caption=>'Sub.',   f=>q{%d},    fs=>q{%.1f%%} },
+                'subroutine' => { caption=>'Sub.',  f=>q{%d},    fs=>q{%.1f%%} },
                 'pod'        => { caption=>'POD',   f=>q{%d},    fs=>q{%.1f%%} },
                 'time'       => { caption=>'Time',  f=>q{%.3fs}, fs=>q{%.3fs} },
 
@@ -1076,8 +1256,6 @@ sub _make_per_line_criterions { # {{{
         my $i = 0;
         foreach my $hits_array (@{ $hits->{$criterion} }) {
             my $line_hit = $structure_data->{$criterion}->[$i]->[0];
-
-            assert_defined($line_hit, "Unknown line number? ". $i);
 
             my $hits_count = 0;
             foreach my $part (@{ $hits_array }) {
@@ -1366,6 +1544,12 @@ sub make_summary_report { # {{{
         title    => 'Coverage summary'
     );
 
+    # Begin the report with generic summary of the whole run:
+    $self->make_generic_summary(
+        report       => 'Summary',
+        item_summary => $self->{'summary'}->{'total'},
+    );
+
     my $covered_table = $self->{'formatter'}->add_table(
         'Summary',
         'Files',
@@ -1378,7 +1562,7 @@ sub make_summary_report { # {{{
                 'statement'  => { caption=>'St.',   f=>q{%d%%}, fs=>q{%.1f%%} },
                 'branch'     => { caption=>'Br.',   f=>q{%d%%}, fs=>q{%.1f%%} },
                 'condition'  => { caption=>'Cond.', f=>q{%d%%}, fs=>q{%.1f%%} },
-                'subroutine' => { caption=>'Sub.',   f=>q{%d%%}, fs=>q{%.1f%%} },
+                'subroutine' => { caption=>'Sub.',  f=>q{%d%%}, fs=>q{%.1f%%} },
                 'pod'        => { caption=>'POD',   f=>q{%d%%}, fs=>q{%.1f%%} },
 
                 'time' => { caption=>'Time',  f=>q{%.3fs}, fs=>q{%.3fs} },
@@ -1388,10 +1572,64 @@ sub make_summary_report { # {{{
             headers_order => [ 'file', @{ $self->{'criterion-order'} }, 'runs' ],
         }
     );
+
+#    use Data::Dumper; warn Dumper $self->{'summary'}->{'folders'};
+#    use Data::Dumper; warn Dumper $self->{'summary'}->{'files'};
     
-    # Add rows for every single covered file:
-    foreach my $file_summary (sort { $a->{'file'}->{'v'} cmp $b->{'file'}->{'v'} } values %{ $self->{'summary'}->{'files'} }) {
-        $covered_table->add_row($file_summary);
+    my @rows;
+    my $last_folder = q{};
+    my %folders_added;
+    # To be able to easily make per-directory sub-summaries, this has to be seen from the bottom ;)
+    # For example, on the following list, sub-summaries have to be put under items marked with "<-- here"
+    #   lib/Devel/CoverReport/App
+    #   lib/Devel/CoverReport/App <--
+    #   lib/Devel/CoverReport
+    #   lib/Devel/CoverReport
+    #   lib/Devel/CoverReport/Formatter <-- here
+    #   lib/Devel/CoverReport <-- here
+    # If this list is iterated from the top, it's very hard to find corect spots.
+    # Case becomes very easy, if We iterate from bottom to top.
+    #
+    # Note, that file /A/B/Foo.pm will be considered as part of the /A/B/Foo too!
+    # This may be configurable in future version.
+    foreach my $file_summary (sort { _cmp_path($b->{'file'}->{'v'}, $a->{'file'}->{'v'}) } values %{ $self->{'summary'}->{'files'} }) {
+        my ($current_folder) = ( $file_summary->{'file'}->{'v'} =~ m{^(.+?)(\..+?)$} );
+
+        # If We have just 'switched' folder, summary of the previous one have to be appended to the summary.
+        if ($last_folder ne $current_folder) {
+            $last_folder = $current_folder;
+
+            # We want to add the summary only once, for each folder, and hashes are very handy for this :)
+
+            my @folders_sub_summary;
+            while (1) {
+                if ($self->{'summary'}->{'folders'}->{$current_folder}->{'_files'} and $self->{'summary'}->{'folders'}->{$current_folder}->{'_files'} > 1) {
+                    if (not $folders_added{$current_folder}) {
+                        push @folders_sub_summary, $self->_compose_summary_row(
+                            label  => $current_folder,
+                            source => $self->{'summary'}->{'folders'}->{$current_folder},
+                            class  => 'partial_summary',
+                        );
+                    
+                        $folders_added{$current_folder} = 1;
+                    }
+                }
+
+                if ($current_folder =~ s{/[^/]+$}{}) {
+                    next;
+                }
+
+                last;
+            }
+            push @rows, reverse @folders_sub_summary;
+        }
+
+        push @rows, $file_summary;
+    }
+
+    # Rows are now prepared, and can be added to the table.
+    foreach my $row (reverse @rows) {
+        $covered_table->add_row($row);
     }
 
     # Add total summary as well:
@@ -1400,9 +1638,35 @@ sub make_summary_report { # {{{
     return $self->{'formatter'}->close_report('Summary');
 } # }}}
 
+# Purpose:
+#   Compare two paths. Rukes:
+#       - directories before files
+#       - directories clustered together
+#       - files/dirs sort aphabetically
+sub _cmp_path { # {{{
+    my ( $path_a, $path_b ) = @_;
+    
+    $path_a =~ s{\.pm$}{\xff};
+    $path_b =~ s{\.pm$}{\xff};
+
+    return $path_a cmp $path_b;
+} # }}}
+
 =item compute_summary
 
 Utility routine, compute summary for each criterion.
+
+Source should be a hash - key for each criterion, holding arrays. Example:
+
+    $source = {
+        branch     => \@branch_line_hits,
+        condition  => \@condition_line_hits,
+        statement  => \@statement_line_hits,
+        subroutine => \@subroutine_line_hits,
+        pod        => \@pod_line_hits,
+    }
+
+Params: C<$source>
 
 =cut
 
@@ -1441,6 +1705,8 @@ sub compute_summary { # {{{
         else {
             $summary{$criterion}->{'coverage'} = 0;
         }
+        
+#        warn sprintf " Coverage: % 8.3f%% ( 100 * %3d / %3d ) on %s\n", $summary{$criterion}->{'coverage'}, $summary{$criterion}->{'count_covered'}, $summary{$criterion}->{'count_coverable'}, $criterion;
     }
 
     foreach my $criterion (qw( branch condition )) {
@@ -1490,11 +1756,12 @@ sub _actual_file_path { # {{{
 =item c_class
 
 Compute proper c-class, used for color-coding coverage information:
-    c0  : not covered or coverage < 50%
-    c1  : coverage >= 50%
-    c2  : coverage >= 75%
-    c3  : coverage >= 90%
-    c4  : covered or coverage = 100%
+
+ c0 : not covered or coverage < 50%
+ c1 : coverage >= 50%
+ c2 : coverage >= 75%
+ c3 : coverage >= 90%
+ c4 : covered or coverage = 100%
 
 Static function.
 
@@ -1540,6 +1807,7 @@ web and by childrens under 3 years old :)
 Static function.
 
 =cut
+
 sub namify_path { # {{{
     my ( $path ) = @_;
 
@@ -1600,11 +1868,11 @@ __END__
 
 =head1 LICENCE
 
-Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 
-# This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see by website: http://natanael.krakow.pl
+For more, see my website: http://natanael.krakow.pl/
 
 =cut
 

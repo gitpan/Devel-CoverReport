@@ -1,15 +1,15 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport::Formatter::YAML;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use base 'Devel::CoverReport::Formatter';
 
@@ -17,6 +17,8 @@ use Carp::Assert::More qw( assert_defined );
 use English qw( -no_match_vars );
 use Params::Validate qw( :all );
 use YAML::Syck 1.05 qw( DumpFile );
+
+=encoding UTF-8
 
 =head1 DESCRIPTION
 
@@ -123,5 +125,17 @@ sub process_report_end { # {{{
     return $report_filename;
 } # }}}
 
-# vim: fdm=marker
 1;
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
+=cut
+
+# vim: fdm=marker
+

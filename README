@@ -40,27 +40,7 @@ API
         Parameters: (ARRAY) $self $structure_data : digest's structure data.
 
         Returns: $new_classification : string (like: MISSING, CHANGED) or
-        undef (if no issues ware detected). =cut sub validate_digest { # {{{
-        my ($self, $structure_data) = @_;
-
-            my $actual_path = $self->_actual_file_path($structure_data->{'file'});
-
-            if (not $actual_path) {
-                $self->{'feedback'}->error_at_file("File not reachable!");
-
-                return 'MISSING';
-            }
-
-            if ($self->{'db'}->make_file_digest($actual_path) ne $structure_data->{'digest'}) {
-                # Check if file was modified since it was covered, as coverage report for changed files will not be reliable!
-                $self->{'feedback'}->warning_at_file("File has changed.");
-
-                return 'CHANGED';
-            }
-
-            # No issues detected, it's OK to analize this digest :)
-            return;
-        } # }}}
+        undef (if no issues ware detected).
 
     classify_file
         Determine, if file (identified by it's path) should be INCLUDE-d,
@@ -90,7 +70,13 @@ API
         to this file (runs, that cover this file) $digest - file's ID,
         assigned to it by Devel::Cover
 
-        Returns: (ARRAY) \%summary_metadata,
+        Returns: nothing
+
+    make_generic_summary
+        Prepare table, which shows, for each metric: - coverable items -
+        covered items - coverage (in percent)
+
+        Parameters: ($self + HASH) item_summary - data for the summary row
 
     make_runs_details
         Parameters: ($self + HASH) digest - digest of the file, for which to
@@ -116,359 +102,53 @@ API
 
         Parameters: (ARRAY) $self $structure_data $hits
 
-        Returns: Hash =cut sub _make_per_line_criterions { # {{{ my ( $self,
-        $structure_data, $hits ) = @_; validate_pos( @_, { type=>OBJECT }, {
-        type=>HASHREF }, { type=>HASHREF }, );
-
-            my %per_line_criterions;
-
-            # Process statement and time criterions.
-            foreach my $criterion (qw( statement time )) {
-                my $i = 0;
-
-                foreach my $hit_count (@{ $hits->{$criterion} }) {
-                    my $line_hit = $structure_data->{$criterion}->[$i];
-
-                    if(defined $line_hit) {
-                        push @{ $per_line_criterions{$criterion}->[$line_hit] }, $hit_count;
-                    }
-
-                    $i++;
-                }
-            }
-
-            # Process subroutine and pod.
-            foreach my $criterion (qw( subroutine pod )) {
-                my $i = 0;
-
-                foreach my $hit_count (@{ $hits->{$criterion} }) {
-                    my $line_hit = $structure_data->{$criterion}->[$i];
-
-                    if ($line_hit and $line_hit->[0]) {
-                        # FIXME:
-                        #   it DOES happen, that structure file has no information related to some function.
-                        #   I have observed it while running under --jobs, maybe it's some race condition...
-                        push @{ $per_line_criterions{$criterion}->[ $line_hit->[0] ] }, $hit_count;
-                    }
-                    else {
-                        # Fixme: if we have a hit, in one of the runs, but have no 'structure' information related to it - it's a bug in Devel::Cover!
-                    }
-
-                    $i++;
-                }
-            }
-
-            # Process branch criterions.
-            foreach my $criterion (qw( branch condition )) {
-                my $i = 0;
-                foreach my $hits_array (@{ $hits->{$criterion} }) {
-                    my $line_hit = $structure_data->{$criterion}->[$i]->[0];
-
-                    assert_defined($line_hit, "Unknown line number? ". $i);
-
-                    my $hits_count = 0;
-                    foreach my $part (@{ $hits_array }) {
-                        if ($part) {
-                            $hits_count++;
-                        }
-                    }
-
-                    $hits_count = 100 * $hits_count / $_ASIZE{$criterion};
-
-                    push @{ $per_line_criterions{$criterion}->[$line_hit] }, int $hits_count;
-
-                    $i++;
-                }
-            }
-
-            return %per_line_criterions;
-        } # }}}
+        Returns: Hash
 
     make_branch_details
         Make detailed branch coverage report.
 
-        Parameters: $self $basename $structure_data $hits =cut sub
-        make_branch_details { # {{{ my ($self, $basename, $structure_data,
-        $hits) = @_;
-
-        # if ($structure_data->{'file'} =~ m{L10N}) { # use Data::Dumper;
-        warn Dumper $structure_data->{'branch'}; # use Data::Dumper; warn
-        Dumper $hits; # }
-
-            my %lines;
-            my $i = 0;
-            foreach my $hits_array (@{ $hits }) {
-                my $line_no = $structure_data->{'branch'}->[$i]->[0];
-
-                my %line = (
-                    '_coverage' => 0,
-
-                    'c_true'  => q{?},
-                    'c_false' => q{?},
-
-                    'line' => $line_no,
-                );
-
-                if ($hits_array->[0]) {
-                    $line{'_coverage'} += 50;
-                    $line{'c_true'} = { class=>q{c4}, v=>'T' };
-                }
-                else {
-                    $line{'c_true'} = { class=>q{c0}, v=>'T' };
-                }
-
-                if ($hits_array->[1]) {
-                    $line{'_coverage'} += 50;
-                    $line{'c_false'} = { class=>q{c4}, v=>'F' };
-                }
-                else {
-                    $line{'c_false'} = { class=>q{c0}, v=>'F' };
-                }
-
-                $lines{$line_no} = \%line;
-
-                $i++;
-            }
-
-            $self->{'formatter'}->add_report(
-                code     => $basename,
-                basename => $basename,
-                title    => 'Branch coverage: ' . $structure_data->{'file'},
-            );
-            my $coverage_table = $self->{'formatter'}->add_table(
-                $basename,
-                'Coverage',
-                {
-                    label   => 'Branch coverage',
-                    headers => {
-                        'line' => { caption=>'Line', f=>q{%d}, fs=>q{%d}, class=>'head' },
-
-                        'percent' => { caption=>q{%},    f=>q{%d}, fs=>q{%.1f} },
-                        'c_true'  => { caption=>'True',  f=>q{%s}, fs=>q{%.1f} },
-                        'c_false' => { caption=>'False', f=>q{%s}, fs=>q{%.1f} },
-
-                        'branch' => { caption=>'Branch', f=>q{%s}, fs=>q{%s}, class=>'src' },
-                    },
-                    headers_order => [qw( line percent c_true c_false branch )],
-                }
-            );
-            foreach my $hit (@{ $structure_data->{'branch'} }) {
-                my $line_no = $hit->[0];
-
-                my $line = $lines{ $line_no };
-
-                $line->{'percent'} = {
-                    class => c_class($line->{'_coverage'}),
-                    v     => $line->{'_coverage'},
-                };
-                $line->{'branch'} = $hit->[1]->{'text'};
-        
-        # warn $line->{'_coverage'} .q{ -> }. c_class($line->{'_coverage'});
-
-                $coverage_table->add_row($line);
-            }
-
-            $self->{'formatter'}->close_report($basename);
-
-            return;
-        } # }}}
+        Parameters: $self $basename $structure_data $hits
 
     make_subroutine_details
         Make detailed subroutine coverage report.
 
-        Parameters: $self $basename $structure_data $hits =cut sub
-        make_subroutine_details { # {{{ my ($self, $basename,
-        $structure_data, $hits) = @_;
-
-        # if ($structure_data->{'file'} =~ m{L10N}) { # use Data::Dumper;
-        warn Dumper $structure_data->{'subroutine'}; # use Data::Dumper;
-        warn Dumper $hits; # }
-
-            my %lines;
-            my $i = 0;
-            foreach my $hits_count (@{ $hits }) {
-                my $line_no = $structure_data->{'subroutine'}->[$i]->[0];
-
-                if ($line_no) {
-                    my %line = (
-                        'line'       => $line_no,
-                        'hits'       => { v=>$hits_count, class=>'c0' },
-                        'subroutine' => q{?},
-                    );
-
-                    if ($hits_count) {
-                        $line{'hits'}->{'class'} = 'c4';
-                    }
-
-                    $lines{$line_no} = \%line;
-                }
-                else {
-                    # Fixme: if we have a hit, in one of the runs, but have no 'structure' information related to it - it's a bug in Devel::Cover!
-                }
-
-                $i++;
-            }
-
-            $self->{'formatter'}->add_report(
-                code     => $basename,
-                basename => $basename,
-                title    => 'Subroutine coverage: ' . $structure_data->{'file'},
-            );
-
-            my $coverage_table = $self->{'formatter'}->add_table(
-                $basename,
-                'Coverage',
-                {
-                    label   => 'Subroutine coverage',
-                    headers => {
-                        'line'       => { caption=>'Line',       f=>q{%d}, fs=>q{%d}, class=>'head' },
-                        'hits'       => { caption=>'Hits',       f=>q{%d}, fs=>q{%d} },
-                        'subroutine' => { caption=>'Subroutine', f=>q{%s}, fs=>q{%s}, class=>'src' },
-                    },
-                    headers_order => [qw( line hits subroutine )],
-                }
-            );
-
-            foreach my $hit (@{ $structure_data->{'subroutine'} }) {
-                if ($hit->[0]) {
-                    my $line_no = $hit->[0];
-
-                    my $line = $lines{ $line_no };
-
-                    $line->{'subroutine'} = $hit->[1];
-
-                    $coverage_table->add_row($line);
-                }
-                else {
-                    # Fixme: if we have a hit, in one of the runs, but have no 'structure' information related to it - it's a bug in Devel::Cover!
-                }
-            }
-
-            $self->{'formatter'}->close_report($basename);
-
-            return;
-        } # }}}
+        Parameters: $self $basename $structure_data $hits
 
     make_condition_details
         Make detailed branch coverage report.
 
-        Parameters: $self $basename $structure_data $hits =cut sub
-        make_condition_details { # {{{ my ($self, $basename,
-        $structure_data, $hits) = @_;
-
-        # if ($structure_data->{'file'} =~ m{L10N}) { # use Data::Dumper;
-        warn Dumper $structure_data->{'condition'}; # use Data::Dumper; warn
-        Dumper $hits; # }
-
-            # Fixme! There is probably a bug in this subroutine, due to my poor understanding of those data structures!!.
-
-            my %lines;
-            my $i = 0;
-            foreach my $hits_count (@{ $hits }) {
-                my $line_no = $structure_data->{'condition'}->[$i]->[0];
-
-                my $hits_count = 0;
-                my $cover = 0;
-
-                my $code = sprintf q{%s %s %s}, $structure_data->{'condition'}->[$i]->[1]->{'left'}, $structure_data->{'condition'}->[$i]->[1]->{'op'}, $structure_data->{'condition'}->[$i]->[1]->{'right'};
-
-                my %line = (
-                    'line'  => $line_no,
-                    'cover' => { v=>$hits_count, class=>c_class($cover) },
-                    'code'  => $code,
-                );
-
-                if ($hits_count) {
-                    $line{'hits'}->{'class'} = 'c4';
-                }
-
-                $lines{$line_no} = \%line;
-
-                $i++;
-            }
-
-            $self->{'formatter'}->add_report(
-                code     => $basename,
-                basename => $basename,
-                title    => 'Condition coverage: ' . $structure_data->{'file'},
-            );
-
-            my $coverage_table = $self->{'formatter'}->add_table(
-                $basename,
-                'Coverage',
-                {
-                    label   => 'Condition coverage',
-                    headers => {
-                        'line'  => { caption=>'Line',      f=>q{%d}, fs=>q{%d}, class=>'head' },
-                        'cover' => { caption=>q{%},        f=>q{%d}, fs=>q{%d} },
-                        'code'  => { caption=>'Condition', f=>q{%s}, fs=>q{%s}, class=>'src' },
-                    },
-                    headers_order => [qw( line cover code )],
-                }
-            );
-            foreach my $line (sort {$a->{'line'} <=> $b->{'line'}} values %lines) {
-                $coverage_table->add_row($line);
-            }
-
-            $self->{'formatter'}->close_report($basename);
-
-            return;
-        } # }}}
+        Parameters: $self $basename $structure_data $hits
 
     make_summary_report
         Make file index, with coverage summary for each.
 
         Parameters: $self $total_summary - total (all files/runs average)
-        summary =cut sub make_summary_report { # {{{ my ( $self,
-        $total_summary ) = @_;
-
-            my $summary_report = $self->{'formatter'}->add_report(
-                code     => 'Summary',
-                basename => 'cover_report',
-                title    => 'Coverage summary'
-            );
-
-            my $covered_table = $self->{'formatter'}->add_table(
-                'Summary',
-                'Files',
-                {
-                    label => 'Covered files:',
-
-                    headers => {
-                        file => { caption => 'File', f=>q{%s}, class => 'file' },
-
-                        'statement'  => { caption=>'St.',   f=>q{%d%%}, fs=>q{%.1f%%} },
-                        'branch'     => { caption=>'Br.',   f=>q{%d%%}, fs=>q{%.1f%%} },
-                        'condition'  => { caption=>'Cond.', f=>q{%d%%}, fs=>q{%.1f%%} },
-                        'subroutine' => { caption=>'Sub.',   f=>q{%d%%}, fs=>q{%.1f%%} },
-                        'pod'        => { caption=>'POD',   f=>q{%d%%}, fs=>q{%.1f%%} },
-
-                        'time' => { caption=>'Time',  f=>q{%.3fs}, fs=>q{%.3fs} },
-
-                        'runs' => { caption=>'Runs', f=>q{%d}, fs=>q{%d} },
-                    },
-                    headers_order => [ 'file', @{ $self->{'criterion-order'} }, 'runs' ],
-                }
-            );
-    
-            # Add rows for every single covered file:
-            foreach my $file_summary (sort { $a->{'file'}->{'v'} cmp $b->{'file'}->{'v'} } values %{ $self->{'summary'}->{'files'} }) {
-                $covered_table->add_row($file_summary);
-            }
-
-            # Add total summary as well:
-            $covered_table->add_summary($total_summary);
-
-            return $self->{'formatter'}->close_report('Summary');
-        } # }}}
+        summary
 
     compute_summary
         Utility routine, compute summary for each criterion.
 
+        Source should be a hash - key for each criterion, holding arrays.
+        Example:
+
+            $source = {
+                branch     => \@branch_line_hits,
+                condition  => \@condition_line_hits,
+                statement  => \@statement_line_hits,
+                subroutine => \@subroutine_line_hits,
+                pod        => \@pod_line_hits,
+            }
+
+        Params: $source
+
     c_class
         Compute proper c-class, used for color-coding coverage information:
-        c0 : not covered or coverage < 50% c1 : coverage >= 50% c2 :
-        coverage >= 75% c3 : coverage >= 90% c4 : covered or coverage = 100%
+
+         c0 : not covered or coverage < 50%
+         c1 : coverage >= 50%
+         c2 : coverage >= 75%
+         c3 : coverage >= 90%
+         c4 : covered or coverage = 100%
 
         Static function.
 
@@ -486,10 +166,10 @@ API
         Static function.
 
 LICENCE
-    Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+    Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 
-    # This is free software. It is licensed, and can be distributed under
-    the same terms as Perl itself.
+    This is free software. It is licensed, and can be distributed under the
+    same terms as Perl itself.
 
-    For more, see by website: http://natanael.krakow.pl
+    For more, see my website: http://natanael.krakow.pl/
 

@@ -1,23 +1,25 @@
-package Devel::CoverReport::App::ProveCover;
-
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
+
+package Devel::CoverReport::App::ProveCover;
 
 use strict;
 use warnings;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
-use Devel::CoverReport 0.01;
+use Devel::CoverReport 0.02;
 
 use App::Prove 3.11;
 use Carp;
 use Cwd;
 use File::Path qw( rmtree );
 use Getopt::Long 2.36 qw( GetOptionsFromArray );
+
+=encoding UTF-8
 
 =head1 NAME
 
@@ -128,11 +130,11 @@ __END__
 
 =head1 LICENCE
 
-Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 
-# This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see by website: http://natanael.krakow.pl
+For more, see my website: http://natanael.krakow.pl/
 
 =cut
 

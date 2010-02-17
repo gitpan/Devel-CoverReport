@@ -1,19 +1,19 @@
 #!/usr/bin/perl
 
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 require 5.6.1;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
-use Devel::CoverReport::App::ProveCover 0.01;
+use Devel::CoverReport::App::ProveCover 0.02;
 
 exit Devel::CoverReport::App::ProveCover::main(@ARGV);
 
@@ -123,7 +123,7 @@ Bartłomiej Syguła <natanael@natanael.krakow.pl>
 
 =head1 COPYRIGHT AND DISCLAIMER
 
-Copyright 2009, Bartłomiej Syguła
+Copyright 2009-2010, Bartłomiej Syguła
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 

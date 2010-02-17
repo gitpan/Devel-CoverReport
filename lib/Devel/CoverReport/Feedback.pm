@@ -1,19 +1,21 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport::Feedback;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Carp::Assert::More qw( assert_defined );
 use English qw( -no_match_vars );
 use Params::Validate qw( :all );
+
+=encoding UTF-8
 
 =head1 DESCRIPTION
 
@@ -74,7 +76,9 @@ sub new { # {{{
 =item note
 
 Print a note, unless running in 'quiet' mode.
+
 =cut
+
 sub note { # {{{
     my ( $self, $text ) = @_;
 
@@ -88,7 +92,9 @@ sub note { # {{{
 =item info
 
 Print informative text, when in 'verbose' mode.
+
 =cut
+
 sub info { # {{{
     my ( $self, $text ) = @_;
 
@@ -104,6 +110,7 @@ sub info { # {{{
 Print indication, that specific file is being processed.
 
 =cut
+
 sub at_file { # {{{
     my ( $self, $file_path ) = @_;
 
@@ -136,6 +143,7 @@ sub _at_file { # {{{
 Indicate, that file processing has finished. This means, that either this was the last file, or we are about to go to the next one.
 
 =cut
+
 sub file_off { # {{{
     my ( $self ) = @_;
 
@@ -150,7 +158,9 @@ Report any errors, that are related to file being currently processed.
 Always printed.
 
 If file path was not printed, it will be, just before the error.
+
 =cut
+
 sub error_at_file { # {{{
     my ( $self, $text ) = @_;
 
@@ -167,7 +177,9 @@ Report any warnings, that are related to file being currently processed.
 Always printed.
 
 If file path was not printed, it will be, just before the warning.
+
 =cut
+
 sub warning_at_file { # {{{
     my ( $self, $text ) = @_;
 
@@ -183,6 +195,7 @@ sub warning_at_file { # {{{
 Open progress indicator.
 
 =cut
+
 sub progress_open { # {{{
     my ( $self, $text ) = @_;
 
@@ -200,6 +213,7 @@ sub progress_open { # {{{
 Indicate, that a step in the process has been made.
 
 =cut
+
 sub progress_tick { # {{{
     my ( $self ) = @_;
 
@@ -215,6 +229,7 @@ sub progress_tick { # {{{
 Close (end) progress indicator.
 
 =cut
+
 sub progress_close { # {{{
     my ( $self ) = @_;
 
@@ -236,6 +251,7 @@ This way output of one child is not interrupted by other child.
 There is no C<disable_buffer>, since it was needed. I will add it, once there will be a need for it (see? I'm not THAT lazy ;).
 
 =cut
+
 sub enable_buffer { # {{{
     my ($self) = @_;
 
@@ -257,6 +273,7 @@ After contents of the buffer are returned, the buffer itself is cleared.
 B<Impotant:> make sure, You do not pass it using a Feedback object that has buffering enabled! That would not make much sense.
 
 =cut
+
 sub dump_buffer { # {{{
     my ($self) = @_;
 
@@ -274,6 +291,7 @@ Print serialized output buffer contents.
 See notes in C<dump_buffer> too.
 
 =cut
+
 sub pass_buffer { # {{{
     my ($self, $buffer) = @_;
 
@@ -289,6 +307,7 @@ It can be overwritten in child classes, so they can log to file, or what ever Yo
 Private. Do not use from outside of the module!
 
 =cut
+
 sub _print { # {{{
     my ( $self, @params ) = @_;
 
@@ -301,6 +320,17 @@ sub _print { # {{{
     return print @params;
 } # }}}
 
-# vim: fdm=marker
-
 1;
+
+=back
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
+=cut
+

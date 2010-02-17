@@ -3,6 +3,45 @@ data:
   tables: 
     - 
       headers: 
+        coverable: 
+          caption: Coverable
+          f: "%d"
+          fs: ''
+        coverage: 
+          caption: Coverage
+          f: "%.1f%%"
+          fs: "%.1f%%"
+        covered: 
+          caption: Covered
+          f: "%d"
+          fs: ''
+        criterion: 
+          caption: Criterion
+          class: head
+          f: "%s"
+          fs: "%s"
+      headers_order: 
+        - criterion
+        - coverable
+        - covered
+        - coverage
+      label: "Coverage summary:"
+      rows: 
+        - 
+          coverable: 15
+          coverage: 
+            class: c4
+            v: 100
+          covered: 15
+          criterion: Statement
+      summary: 
+        - 
+          coverage: 
+            class: c4
+            v: 100
+          criterion: Overall coverage
+    - 
+      headers: 
         branch: 
           caption: Br.
           f: "%d%%"
@@ -569,4 +608,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: lib/Sample/Simple/Bar.pm"
-  version: 0.01
+  version: 0.02

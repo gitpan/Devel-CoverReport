@@ -1,16 +1,49 @@
 ---
-name: Devel-CoverReport
-version: 0.01
+abstract: 'Advanced coverage reports based on Devel::Cover'
 author:
   - 'Bartłomiej Syguła <natanael@natanael.krakow.pl>'
-abstract: Advanced coverage reports based on Devel::Cover
+configure_requires:
+  Module::Build: 0.36
+dynamic_config: 0
+generated_by: 'Module::Build version 0.3603'
 license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Devel-CoverReport
+provides:
+  Devel::CoverReport:
+    file: lib/Devel/CoverReport.pm
+    version: 0.02
+  Devel::CoverReport::App::CoverReport:
+    file: lib/Devel/CoverReport/App/CoverReport.pm
+    version: 0.02
+  Devel::CoverReport::App::ProveCover:
+    file: lib/Devel/CoverReport/App/ProveCover.pm
+    version: 0.02
+  Devel::CoverReport::DB:
+    file: lib/Devel/CoverReport/DB.pm
+    version: 0.02
+  Devel::CoverReport::Feedback:
+    file: lib/Devel/CoverReport/Feedback.pm
+    version: 0.02
+  Devel::CoverReport::Formatter:
+    file: lib/Devel/CoverReport/Formatter.pm
+    version: 0.02
+  Devel::CoverReport::Formatter::Html:
+    file: lib/Devel/CoverReport/Formatter/Html.pm
+    version: 0.02
+  Devel::CoverReport::Formatter::YAML:
+    file: lib/Devel/CoverReport/Formatter/YAML.pm
+    version: 0.02
+  Devel::CoverReport::Table:
+    file: lib/Devel/CoverReport/Table.pm
+    version: 0.02
 requires:
   App::Prove: 3.11
   Carp::Assert::More: 1.12
   Cwd: 3.12
+  Devel::Cover: 0.64
   File::Path: 1.07
   File::Slurp: 9999.13
   FindBin: 1.47
@@ -20,40 +53,6 @@ requires:
   Storable: 2.15
   YAML::Syck: 1.05
   perl: v5.8.0
-recommends:
-  Devel::Cover: 0.64
-configure_requires:
-  Module::Build: 0.35
-dynamic_config: 0
-provides:
-  Devel::CoverReport:
-    file: lib/Devel/CoverReport.pm
-    version: 0.01
-  Devel::CoverReport::App::CoverReport:
-    file: lib/Devel/CoverReport/App/CoverReport.pm
-    version: 0.01
-  Devel::CoverReport::App::ProveCover:
-    file: lib/Devel/CoverReport/App/ProveCover.pm
-    version: 0.01
-  Devel::CoverReport::DB:
-    file: lib/Devel/CoverReport/DB.pm
-    version: 0.01
-  Devel::CoverReport::Feedback:
-    file: lib/Devel/CoverReport/Feedback.pm
-    version: 0.01
-  Devel::CoverReport::Formatter:
-    file: lib/Devel/CoverReport/Formatter.pm
-    version: 0.01
-  Devel::CoverReport::Formatter::Html:
-    file: lib/Devel/CoverReport/Formatter/Html.pm
-    version: 0.01
-  Devel::CoverReport::Formatter::YAML:
-    file: lib/Devel/CoverReport/Formatter/YAML.pm
-    version: 0.01
-  Devel::CoverReport::Table:
-    file: lib/Devel/CoverReport/Table.pm
-    version: 0.01
-generated_by: Module::Build version 0.35
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.02

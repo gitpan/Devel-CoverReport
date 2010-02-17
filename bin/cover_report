@@ -1,19 +1,19 @@
 #!/usr/bin/perl
 
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 require 5.6.1;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
-use Devel::CoverReport::App::CoverReport 0.01;
+use Devel::CoverReport::App::CoverReport 0.02;
 
 exit Devel::CoverReport::App::CoverReport::main(@ARGV);
 
@@ -109,14 +109,32 @@ Files classified as 'Include' will be included in the report, and information ab
 
 This is the third check, so file - if matched - will be Selected, unless it was either Excluded or Mentioned.
 
-=head1 TODO
+=head1 FEATURES
 
 =over
 
 =item Per-directory coverage summary
 
-Average coverage, maesured per directory (with and without sub-directories).
-Since Perl packages rely on directory structure, this could provide useful in igger projects.
+Average coverage, maesured per directory (with sub-directories).
+Since Perl packages rely on directory structure, this could provide useful in bigger projects.
+
+Sub-summaries include module, that has the same package name as the directory. 
+Some example may describe this better:
+ /Foo/Bar.pm
+ /Foo/Baz.pm
+ /Foo.pm
+ /Foo <-- summary, contains /Foo/*.pm and /Foo.pm
+ /Bzz/Brr/Doo.pm
+ /Bzz.pm
+ /Bzz <-- summary, contains /Bzz/Brr/Doo.pm and /Bzz.pm
+In the above example, there is not summary for F</Bzz/Bzz>, as it contains just one file,
+thus it would not introduce any new infromation, and just double some figures.
+
+=back
+
+=head1 TODO
+
+=over
 
 =item File by test cross summary
 
@@ -127,9 +145,9 @@ Intersections show how much ocverage a module receives from the source.
 
 When all file paths start with the same prefix, such prefix could be removed to increase redability.
 
- --basedir_strip     Enable file path shortening
- --nobasedir_strip   Enable file path shortening
- --basedir       dir Set directory, that should be stripped from file paths
+ --basedir_strip       Enable file path shortening
+ --nobasedir_strip     Enable file path shortening
+ --basedir         dir Set directory, that should be stripped from file paths
 
 =back
 
@@ -137,29 +155,20 @@ When all file paths start with the same prefix, such prefix could be removed to 
 
 =over
 
-=item * Devel::Cover
+=item Devel::Cover
 
-Actually, this is not a strict requirement. Since Devel::CoverReport is just a reporting tool,
+This is not always a strict requirement. Since Devel::CoverReport is primary a reporting tool,
 You probably need some way of creating the coverage database in the first place.
 
-An example use-case, where You will not need having Devel::Cover along, if You just want
+An example use-case, where You will NOT need having Devel::Cover along, is if You just want
 to make report from database, that was generated on another maching/by someone else.
 
 =back
 
-=head1 WARNING
-
-Consider this script to be an early ALPHA. It does the job for me, so it's here.
-
-This is my first CPAN module, so I expect that some things may be a bit rough around edges.
-
-The plan is, to fix both those issues, and remove this warning in next immediate release.
-
 =head1 BUGS
 
 Condition handling is broken - it will I<probably> work on summaries,
-but is ultimetly broken on detail pages.
-Will fix that in next release.
+but is ultimtely broken on detail pages. Will fix that in next release.
 
 =head1 KNOWN ISSUES
 
@@ -188,7 +197,7 @@ Johan Lindström (Devel::CoverX::Covered)
 
 =head1 COPYRIGHT AND DISCLAIMER
 
-Copyright 2009, Bartłomiej Syguła
+Copyright 2009-2010, Bartłomiej Syguła
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 

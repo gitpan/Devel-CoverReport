@@ -1,18 +1,20 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport::Table;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Carp::Assert::More qw( assert_defined );
 use Params::Validate qw( :all );
+
+=encoding UTF-8
 
 =head1 DESCRIPTION
 
@@ -145,6 +147,15 @@ sub get_summary { # {{{
 } # }}}
 
 =back
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
 =cut
 
 # vim: fdm=marker

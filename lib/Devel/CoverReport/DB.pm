@@ -1,15 +1,15 @@
-# Copyright 2009, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see by website: http://natanael.krakow.pl
+# For more, see my website: http://natanael.krakow.pl/
 
 package Devel::CoverReport::DB;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Carp;
 use Digest::MD5 qw( md5_hex );
@@ -17,6 +17,8 @@ use File::Slurp qw( read_file write_file read_dir );
 use Params::Validate qw( :all );
 use Storable;
 use YAML::Syck qw( LoadFile DumpFile );
+
+=encoding UTF-8
 
 =head1 DESCRIPTION
 
@@ -128,6 +130,7 @@ Returned data structure is as follows:
         ...
     ],
  );
+
 =cut
 
 sub get_digest_to_run { # {{{
@@ -226,6 +229,7 @@ Parameters:
 
 Returns:
   $digest_data - hashref.
+
 =cut
 sub get_structure_data { # {{{
     my ( $self, $digest ) = @_;
@@ -243,6 +247,7 @@ Parameters:
 
 Returns:
   $run_data - hashref.
+
 =cut
 sub get_run_data { # {{{
     my ( $self, $run ) = @_;
@@ -260,6 +265,7 @@ Parameters:
 
 Returns:
   $digest - scalar (string)
+
 =cut
 sub make_file_digest { # {{{
     my ( $self, $path ) = @_;
@@ -269,6 +275,16 @@ sub make_file_digest { # {{{
 
 1;
 
-__END__
+=back
+
+=head1 LICENCE
+
+Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+
+This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
+
+For more, see my website: http://natanael.krakow.pl/
+
+=cut
 
 # vim: fdm=marker

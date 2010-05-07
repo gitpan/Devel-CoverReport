@@ -101,7 +101,7 @@ data:
             - 
               anchor: 3
               class: c4
-              href: 3f940e134c0bc9dcb6f0c20df240d62f-1253384586.6373.10649-subroutine
+              href: t-Baz-b-t-1253384586.6373.10649-subroutine
               v: 1
           time: []
 
@@ -128,7 +128,7 @@ data:
             - 
               anchor: 4
               class: c4
-              href: 3f940e134c0bc9dcb6f0c20df240d62f-1253384586.6373.10649-subroutine
+              href: t-Baz-b-t-1253384586.6373.10649-subroutine
               v: 1
           time: []
 
@@ -170,7 +170,7 @@ data:
             - 
               anchor: 6
               class: c4
-              href: 3f940e134c0bc9dcb6f0c20df240d62f-1253384586.6373.10649-subroutine
+              href: t-Baz-b-t-1253384586.6373.10649-subroutine
               v: 1
           time: []
 
@@ -343,4 +343,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: t/Baz-b.t"
-  version: 0.02
+  version: 0.03

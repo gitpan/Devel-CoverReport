@@ -16,7 +16,7 @@ my $build = Module::Build->new (
     dist_author   => 'Bartłomiej Syguła <natanael@natanael.krakow.pl>',
 
     # What You must have, and what will do You good.
-    requires    => {
+    requires => {
         'perl' => '5.8.0',
 
         'Devel::Cover'       => '0.64',

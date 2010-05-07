@@ -11,10 +11,30 @@ use FindBin qw( $Bin );
 use lib $Bin .'/../lib';
 # DEBUG off
 
-use Test::More;
-use Test::Perl::Critic;
+BEGIN {
+    $|  = 1;
+    $^W = 1;
+}
 
-my @perl_files = Test::Perl::Critic::all_perl_files($Bin .q{/../lib/});
+my @MODULES = (
+    'Perl::Critic::Utils 1.105',
+);
+
+# Don't run tests during end-user installs
+use Test::More;
+unless ( $ENV{AUTOMATED_TESTING} or $ENV{RELEASE_TESTING} ) {
+    plan( skip_all => "Author tests not required for installation" );
+}
+
+# Load the testing module
+eval "use Perl::Critic::Utils 1.105";
+if ( $@ ) {
+	$ENV{RELEASE_TESTING}
+	? die( "Failed to load required release-testing module Perl::Critic::Utils" )
+	: plan( skip_all => "Perl::Critic::Utils not available for testing" );
+}
+
+my @perl_files = Perl::Critic::Utils::all_perl_files($Bin .q{/../lib/});
 
 plan tests => scalar @perl_files;
 

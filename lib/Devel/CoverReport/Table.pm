@@ -9,7 +9,7 @@ package Devel::CoverReport::Table;
 use strict;
 use warnings;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 use Carp::Assert::More qw( assert_defined );
 use Params::Validate qw( :all );

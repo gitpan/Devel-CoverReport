@@ -289,7 +289,7 @@ data:
             - 
               anchor: 5
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-subroutine
+              href: lib-Sample-Simple-Foo-pm-subroutine
               v: 0
           time: []
 
@@ -345,13 +345,13 @@ data:
             - 
               anchor: 9
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-branch
+              href: lib-Sample-Simple-Foo-pm-branch
               v: 0
           condition: 
             - 
               anchor: 9
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-condition
+              href: lib-Sample-Simple-Foo-pm-condition
               v: 0
           line: 9
           pod: []
@@ -370,7 +370,7 @@ data:
             - 
               anchor: 10
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-branch
+              href: lib-Sample-Simple-Foo-pm-branch
               v: 0
           condition: []
 
@@ -500,13 +500,13 @@ data:
             - 
               anchor: 18
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-branch
+              href: lib-Sample-Simple-Foo-pm-branch
               v: 0
           condition: 
             - 
               anchor: 18
               class: c0
-              href: 0fa3fe41ed0ee4fabd7c4cf50b5672c6-condition
+              href: lib-Sample-Simple-Foo-pm-condition
               v: 0
           line: 18
           pod: []
@@ -653,4 +653,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: lib/Sample/Simple/Foo.pm"
-  version: 0.02
+  version: 0.03

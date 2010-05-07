@@ -8,10 +8,10 @@ package Devel::CoverReport;
 
 use strict; use warnings;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
-use Devel::CoverReport::DB 0.02;
-use Devel::CoverReport::Feedback 0.02;
+use Devel::CoverReport::DB 0.03;
+use Devel::CoverReport::Feedback 0.03;
 
 use Carp::Assert::More qw( assert_defined assert_hashref assert_listref );
 use Digest::MD5 qw( md5_hex );
@@ -681,6 +681,7 @@ sub analyse_digest { # {{{
 
     if ($self->_do_coverage_report()) {
         $self->make_coverage_summary(
+            basename       => namify_path($structure_data->{'file'}),
             structure_data => $structure_data,
             hits           => $hits->{'global'},
             report_id      => $digest,
@@ -1030,6 +1031,7 @@ sub make_runs_details { # {{{
                 $row{'command'}->{'href'} = $namified_path . q{-} . $run;
 
                 $self->make_coverage_summary(
+                    basename       => $row{'command'}->{'href'},
                     structure_data => $P{'structure_data'},
                     hits           => $P{'run_hits'}->{$run},
                     report_id      => $P{'digest'} . q{-} . $run,
@@ -1076,6 +1078,7 @@ sub make_coverage_summary { # {{{
     validate(
         @_,
         {
+            basename       => { type=>SCALAR },
             structure_data => { type=>HASHREF },
             hits           => { type=>HASHREF },
             report_id      => { type=>SCALAR },
@@ -1161,7 +1164,7 @@ sub make_coverage_summary { # {{{
         foreach my $criterion (qw( subroutine branch condition )) {
             if ($row{$criterion}) {
                 foreach my $item (@{ $row{$criterion} }) {
-                    $item->{'href'}   = $P{'report_id'} . q{-} . $criterion;
+                    $item->{'href'}   = $P{'basename'} . q{-} . $criterion;
                     $item->{'anchor'} = $hr_ln;
                 }
             }

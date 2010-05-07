@@ -287,12 +287,12 @@ data:
             - 
               anchor: 4
               class: c4
-              href: 62e1cf645086f26687089080f648a366-subroutine
+              href: lib-Sample-Simple-Bar-pm-subroutine
               v: 1
             - 
               anchor: 4
               class: c4
-              href: 62e1cf645086f26687089080f648a366-subroutine
+              href: lib-Sample-Simple-Bar-pm-subroutine
               v: 1
           time: []
 
@@ -345,7 +345,7 @@ data:
             - 
               anchor: 7
               class: c4
-              href: 62e1cf645086f26687089080f648a366-subroutine
+              href: lib-Sample-Simple-Bar-pm-subroutine
               v: 2
           time: []
 
@@ -401,13 +401,13 @@ data:
             - 
               anchor: 11
               class: c1
-              href: 62e1cf645086f26687089080f648a366-branch
+              href: lib-Sample-Simple-Bar-pm-branch
               v: 50
           condition: 
             - 
               anchor: 11
               class: c1
-              href: 62e1cf645086f26687089080f648a366-condition
+              href: lib-Sample-Simple-Bar-pm-condition
               v: 66
           line: 11
           pod: []
@@ -426,7 +426,7 @@ data:
             - 
               anchor: 12
               class: c4
-              href: 62e1cf645086f26687089080f648a366-branch
+              href: lib-Sample-Simple-Bar-pm-branch
               v: 100
           condition: []
 
@@ -556,13 +556,13 @@ data:
             - 
               anchor: 20
               class: c4
-              href: 62e1cf645086f26687089080f648a366-branch
+              href: lib-Sample-Simple-Bar-pm-branch
               v: 100
           condition: 
             - 
               anchor: 20
               class: c1
-              href: 62e1cf645086f26687089080f648a366-condition
+              href: lib-Sample-Simple-Bar-pm-condition
               v: 66
           line: 20
           pod: []
@@ -709,4 +709,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: lib/Sample/Simple/Bar.pm"
-  version: 0.02
+  version: 0.03

@@ -101,7 +101,7 @@ data:
             - 
               anchor: 3
               class: c4
-              href: 54fe3b133d3c68648dc9cf43a0ed9887-1253384591.6375.39890-subroutine
+              href: t-Foo-t-1253384591.6375.39890-subroutine
               v: 1
           time: []
 
@@ -128,7 +128,7 @@ data:
             - 
               anchor: 4
               class: c4
-              href: 54fe3b133d3c68648dc9cf43a0ed9887-1253384591.6375.39890-subroutine
+              href: t-Foo-t-1253384591.6375.39890-subroutine
               v: 1
           time: []
 
@@ -170,7 +170,7 @@ data:
             - 
               anchor: 6
               class: c4
-              href: 54fe3b133d3c68648dc9cf43a0ed9887-1253384591.6375.39890-subroutine
+              href: t-Foo-t-1253384591.6375.39890-subroutine
               v: 1
           time: []
 
@@ -309,4 +309,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: t/Foo.t"
-  version: 0.02
+  version: 0.03

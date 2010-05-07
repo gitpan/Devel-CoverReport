@@ -11,9 +11,9 @@ require 5.6.1;
 use strict;
 use warnings;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
-use Devel::CoverReport::App::ProveCover 0.02;
+use Devel::CoverReport::App::ProveCover 0.03;
 
 exit Devel::CoverReport::App::ProveCover::main(@ARGV);
 

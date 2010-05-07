@@ -9,9 +9,9 @@ package Devel::CoverReport::App::CoverReport;
 use strict;
 use warnings;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
-use Devel::CoverReport 0.02;
+use Devel::CoverReport 0.03;
 
 use Carp;
 use Getopt::Long 2.36 qw( GetOptionsFromArray );

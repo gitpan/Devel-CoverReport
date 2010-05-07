@@ -9,9 +9,9 @@ package Devel::CoverReport::App::ProveCover;
 use strict;
 use warnings;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
-use Devel::CoverReport 0.02;
+use Devel::CoverReport 0.03;
 
 use App::Prove 3.11;
 use Carp;

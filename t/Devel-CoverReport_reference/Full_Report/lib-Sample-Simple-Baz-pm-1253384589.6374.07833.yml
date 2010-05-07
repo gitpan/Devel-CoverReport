@@ -125,12 +125,12 @@ data:
             - 
               anchor: 4
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-subroutine
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-subroutine
               v: 1
             - 
               anchor: 4
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-subroutine
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-subroutine
               v: 1
           time: []
 
@@ -288,7 +288,7 @@ data:
             - 
               anchor: 14
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-subroutine
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-subroutine
               v: 4
           time: []
 
@@ -344,13 +344,13 @@ data:
             - 
               anchor: 18
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-branch
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-branch
               v: 100
           condition: 
             - 
               anchor: 18
               class: c1
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-condition
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-condition
               v: 66
           line: 18
           pod: []
@@ -369,7 +369,7 @@ data:
             - 
               anchor: 19
               class: c1
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-branch
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-branch
               v: 50
           condition: []
 
@@ -499,13 +499,13 @@ data:
             - 
               anchor: 27
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-branch
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-branch
               v: 100
           condition: 
             - 
               anchor: 27
               class: c4
-              href: 254b06e053b1c2f976331229f57f6c69-1253384589.6374.07833-condition
+              href: lib-Sample-Simple-Baz-pm-1253384589.6374.07833-condition
               v: 100
           line: 27
           pod: []
@@ -652,4 +652,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: lib/Sample/Simple/Baz.pm"
-  version: 0.02
+  version: 0.03

@@ -263,7 +263,7 @@ data:
             - 
               anchor: 3
               class: c4
-              href: 1bf47540483258f246ae798715862591-subroutine
+              href: t-Baz-t-subroutine
               v: 1
           time: []
 
@@ -290,7 +290,7 @@ data:
             - 
               anchor: 4
               class: c4
-              href: 1bf47540483258f246ae798715862591-subroutine
+              href: t-Baz-t-subroutine
               v: 1
           time: []
 
@@ -332,7 +332,7 @@ data:
             - 
               anchor: 6
               class: c4
-              href: 1bf47540483258f246ae798715862591-subroutine
+              href: t-Baz-t-subroutine
               v: 1
           time: []
 
@@ -537,4 +537,4 @@ data:
             v: ~
 metadata: 
   title: "Coverage: t/Baz.t"
-  version: 0.02
+  version: 0.03

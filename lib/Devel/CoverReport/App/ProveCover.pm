@@ -1,17 +1,17 @@
-# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see my website: http://natanael.krakow.pl/
+# For more, see my website: http://bs502.pl/
 
 package Devel::CoverReport::App::ProveCover;
 
 use strict;
 use warnings;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
-use Devel::CoverReport 0.03;
+use Devel::CoverReport 0.04;
 
 use App::Prove 3.11;
 use Carp;
@@ -48,13 +48,13 @@ Main entry point. Executed by C<prove_cover>
 =cut
 sub main { # {{{
     my @cmd_params = @_;
-    
+
     # Strip 'our' parameters.
     my %cover_report_options = (
         'no_report' => q{},
         'cover_db'  => q{},
     );
-    
+
     Getopt::Long::Configure(qw( pass_through no_auto_help ));
     GetOptionsFromArray(
         \@cmd_params,
@@ -80,7 +80,7 @@ sub main { # {{{
 
     # Step 3: Run 'prove'
     $app->run;
-    
+
     # Step 4: run 'cover_report'
     if ($cover_report_options{'no_report'}) {
         print "Coverage report was not generated, use cover_report command to do that.\n";
@@ -93,7 +93,7 @@ sub main { # {{{
                 formatter => 'Html',
 
                 criterion => { 'statement' => 1, 'branch' => 1, 'condition' => 1, 'path' => 1, 'subroutine' => 1, 'pod' => 1, 'time' => 1, 'runs' => 1 },
-                report    => { 'summary'   => 1, 'index'  => 1, 'coverage'  => 1, 'runs' => 1, 'run-details' => 1, },
+                report    => { 'summary'   => 1, 'index'  => 1, 'coverage'  => 1, 'runs' => 1, 'run-details' => 1, vcs => 1,},
 
                 exclude     => [],
                 exclude_dir => [],
@@ -130,11 +130,11 @@ __END__
 
 =head1 LICENCE
 
-Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see my website: http://natanael.krakow.pl/
+For more, see my website: http://bs502.pl/
 
 =cut
 

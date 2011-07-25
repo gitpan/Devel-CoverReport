@@ -1,15 +1,15 @@
-# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see my website: http://natanael.krakow.pl/
+# For more, see my website: http://bs502.pl/
 
 package Devel::CoverReport::Formatter::Html;
 
 use strict;
 use warnings;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 use base 'Devel::CoverReport::Formatter';
 
@@ -266,17 +266,18 @@ sub _html_quote { # {{{
 
 =head1 LICENCE
 
-Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see my website: http://natanael.krakow.pl/
+For more, see my website: http://bs502.pl/
 
 =cut
 
 __DATA__
 body {
     font-family: sans-serif;
+    font-size: 8pt;
     margin: 5px;
     color: #000;
 }
@@ -336,10 +337,11 @@ a:link, a:hover, a:active, a:visited {
     vertical-align: bottom;
 }
 /* file, directories and paths */
-.file {
-   text-align: left;
-   white-space: pre;
-   padding: 0em 0.5em 0em 0.5em;
+.file, .vcs {
+    text-align: left;
+    white-space: pre;
+    padding: 0em 0.5em 0em 0.5em;
+    font-family: monospace;
 }
 
 /* Classes for color-coding coverage information:

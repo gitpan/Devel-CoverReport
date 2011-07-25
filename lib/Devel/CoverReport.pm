@@ -1,17 +1,17 @@
-# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see my website: http://natanael.krakow.pl/
+# For more, see my website: http://bs502.pl/
 
 package Devel::CoverReport;
 
 use strict; use warnings;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
-use Devel::CoverReport::DB 0.03;
-use Devel::CoverReport::Feedback 0.03;
+use Devel::CoverReport::DB 0.04;
+use Devel::CoverReport::Feedback 0.04;
 
 use Carp::Assert::More qw( assert_defined assert_hashref assert_listref );
 use Digest::MD5 qw( md5_hex );
@@ -39,7 +39,7 @@ This module provides advanced reports based on Devel::Cover database.
 
 =cut
 
-# Size of arrays, for array-based criterions.
+# Size of arrays, for array-based criteria.
 my %_ASIZE= (
     branch    => 2,
     condition => 3,
@@ -59,7 +59,7 @@ The plan is, to fix both those issues, and remove this warning in next immediate
 
 =item new
 
-Constructur for C<Devel::CoverReport>.
+Constructor for C<Devel::CoverReport>.
 
 =cut
 
@@ -116,6 +116,7 @@ sub new { # {{{
         'report-enabled'    => $P{'report'},
         
         'criterion-order' => [],
+        'vcs-order'       => [],
 
         exclude => {
             by_glob => _glob_to_re($P{'exclude'}),
@@ -141,7 +142,11 @@ sub new { # {{{
             files   => {},
             folders => {},
             total   => {},
-        }
+        },
+
+        # Data summarizied per each VCS commit.
+        vcs_summary => {},
+        vcs_cache   => {},
     };
 
     $self->{'cover_db_dir'} = $self->{'cover_db'};
@@ -169,6 +174,10 @@ sub new { # {{{
         if ($self->{'criterion-enabled'}->{$criterion}) {
             push @{ $self->{'criterion-order'} }, $criterion;
         }
+    }
+
+    if ($self->_do_vcs()) {
+        $self->{'vcs-order'} = [ qw( vcs_rev vcs_author ) ];
     }
 
     return $self;
@@ -222,6 +231,11 @@ sub _do_run_details_report { # {{{
     if ($self->{'report-enabled'}->{'run-details'}) { return 1; }
     return;
 } # }}}
+sub _do_vcs { # {{{
+    my ( $self ) = @_;
+    if ($self->{'report-enabled'}->{'vcs'}) { return 1; }
+    return;
+} # }}}
 
 =item make_report
 
@@ -238,6 +252,12 @@ sub make_report { # {{{
     $self->{'feedback'}->info("Scaning cover_db");
 
     my %digest_to_run = $self->{'db'}->get_digest_to_run($self->{'feedback'});
+
+    if (not scalar keys %digest_to_run) {
+        $self->{'feedback'}->error("No runs to process.");
+
+        return 0;
+    }
 
     $self->{'feedback'}->info("Generating reports.");
 
@@ -378,6 +398,9 @@ sub _job_fork { # {{{
 
             file_summary  => undef,
             total_summary => undef,
+        
+            vcs_summary => undef,
+            vcs_cache   => undef,
         };
 
         $self->{'feedback'}->at_file($structure_data->{'file'});
@@ -411,6 +434,9 @@ sub _job_fork { # {{{
         $self->{'child_report'}->{'total_summary'}  = $self->{'summary'}->{'total'};
 
         $self->{'child_report'}->{'folders'} = $self->{'summary'}->{'folders'};
+
+        $self->{'child_report'}->{'vcs_summary'} = $self->{'vcs_summary'};
+        $self->{'child_report'}->{'vcs_cache'}   = $self->{'vcs_cache'};
 
         return $self->_job_done();
     }
@@ -449,7 +475,7 @@ sub _job_wait { # {{{
     my $report_file_name = $self->{'jobs'}->{'spool_dir'} . $pid . q{-cover_report-CR.yml};
 
     my $child_report = LoadFile($report_file_name);
-    
+
     # Print child's buffered output.
     $self->{'feedback'}->pass_buffer( $child_report->{'feedback'} );
 
@@ -465,7 +491,7 @@ sub _job_wait { # {{{
                     $self->{'summary'}->{'folders'}->{$folder}->{$criterion}->{'count_covered'}   += $child_report->{'folders'}->{$folder}->{$criterion}->{'count_covered'};
                 }
             }
-            
+
 #            warn $folder;
             if ($child_report->{'folders'}->{$folder}->{'_files'}) {
                 $self->{'summary'}->{'folders'}->{$folder}->{'_files'} += $child_report->{'folders'}->{$folder}->{'_files'};
@@ -483,6 +509,19 @@ sub _job_wait { # {{{
         }
     }
 
+#    use Data::Dumper; warn Dumper $child_report->{'vcs_cache'}, $child_report->{'vcs_summary'};
+
+    # Integrate child's VCS information, with our own.
+    foreach my $_id (keys %{ $child_report->{'vcs_cache'} }) {
+        $self->{'vcs_cache'}->{$_id} = $child_report->{'vcs_cache'}->{$_id};
+    }
+    foreach my $_id (keys %{ $child_report->{'vcs_summary'} }) {
+        foreach my $criterion (qw( statement subroutine pod branch condition time )) {
+            $self->{'vcs_summary'}->{$_id}->{$criterion}->{'count_coverable'} = $child_report->{'vcs_summary'}->{$_id}->{$criterion}->{'count_coverable'};
+            $self->{'vcs_summary'}->{$_id}->{$criterion}->{'count_covered'}   = $child_report->{'vcs_summary'}->{$_id}->{$criterion}->{'count_covered'};
+        }
+    }
+
     # Clean after the child as, well, it's DEAD, so will not clean after itself ;)
     unlink $report_file_name;
 
@@ -496,6 +535,11 @@ sub _make_in_sequence { # {{{
 
     foreach my $digest ( $self->{'db'}->digests() ) {
         my $structure_data = $self->{'db'}->get_structure_data($digest);
+
+        if (not $structure_data) {
+            $self->{'feedback'}->warning_at_file("Unable to load data from digest: $digest. File excluded.");
+            next;
+        }
 
         $self->{'feedback'}->at_file($structure_data->{'file'});
 
@@ -607,7 +651,7 @@ sub _classify_as { # {{{
 
     foreach my $type (qw( by_glob by_dir by_re )) {
         foreach my $regexp (@{ $self->{$clasification}->{$type} }) {
-            if ($file_path =~ $regexp) {
+            if ($file_path and $file_path =~ $regexp) {
                 return 1;
             }
         }
@@ -632,16 +676,25 @@ Returns: nothing
 sub analyse_digest { # {{{
     my ( $self, $runs, $digest, $structure_data ) = @_;
 
+    assert_defined($runs);
+
     # Process runs, that covered this file.
     $self->{'feedback'}->progress_open("Runs");
 
     my ( $per_run_info, $hits ) = $self->_analyse_runs($structure_data->{'file'}, $runs);
+    
+    my $actual_file_path = $self->_actual_file_path($structure_data->{'file'});
 
     $self->{'feedback'}->progress_close();
+    
+    my $vcs_metadata;
+    if ($self->_do_vcs()) {
+        $vcs_metadata = $self->_get_vcs_metadata($actual_file_path);
+    }
 
     # Summaries:
     my $item_summary = $self->compute_summary($hits->{'global'});
-
+    
     # Open reports for this file.
     $self->{'formatter'}->add_report(
         code     => $digest,
@@ -666,7 +719,7 @@ sub analyse_digest { # {{{
     }
 
     # Walk trough the source file...
-    my @source_lines = read_file($self->_actual_file_path($structure_data->{'file'}));
+    my @source_lines = read_file($actual_file_path);
 
     if ($self->_do_runs_report()) {
         $self->make_runs_details(
@@ -675,7 +728,8 @@ sub analyse_digest { # {{{
             run_hits       => $hits->{'run'},
             per_run_info   => $per_run_info,
             source_lines   => \@source_lines,
-            item_summary   => $item_summary
+            item_summary   => $item_summary,
+            vcs_metadata   => $vcs_metadata,
         );
     }
 
@@ -686,7 +740,8 @@ sub analyse_digest { # {{{
             hits           => $hits->{'global'},
             report_id      => $digest,
             source_lines   => \@source_lines,
-            item_summary   => $item_summary
+            item_summary   => $item_summary,
+            vcs_metadata   => $vcs_metadata,
         );
     }
 
@@ -724,6 +779,12 @@ sub analyse_digest { # {{{
         }
     }
 
+    if ($self->_do_vcs()) {
+        my %per_line_criterions = $self->_make_per_line_criterions($structure_data, $hits->{'global'});
+
+        $self->_append_vcs_summary(\@source_lines, $vcs_metadata, \%per_line_criterions);
+    }
+
     $self->{'summary'}->{'folders'}->{$class_folder}->{'_files'}++;
 
     # Propagate folder-related stats down the tree.
@@ -746,6 +807,50 @@ sub analyse_digest { # {{{
     }
 
     $self->{'summary'}->{'files'}->{$digest} = \%item_summary_row;
+
+    return;
+} # }}}
+
+# Purpose:
+#   Append information from single digest to globas VCS summary pool.
+sub _append_vcs_summary { # {{{
+    my ( $self, $source_lines, $vcs_metadata, $per_line_hits ) = @_;
+
+    # $per_line_criterions -> $per_line_hits
+
+    my $ln    = 0; # Computer-readable line number.
+    my $hr_ln = 1; # Humar-Readable Line Number
+    foreach my $line (@{ $source_lines }) {
+        my $commit_id = $vcs_metadata->{'lines'}->[$ln]->{'_id'};
+
+        if (not $commit_id) {
+            next;
+        }
+        
+        foreach my $criterion (qw( statement subroutine pod )) {
+            if (defined $per_line_hits->{$criterion}->[$hr_ln]) {
+                foreach my $count (@{ $per_line_hits->{$criterion}->[$hr_ln] }) {
+                    if ($count) {
+                        $self->{'vcs_summary'}->{$commit_id}->{$criterion}->{'count_covered'}++;
+                    }
+                    $self->{'vcs_summary'}->{$commit_id}->{$criterion}->{'count_coverable'}++;
+                }
+            }
+        }
+        foreach my $criterion (qw( branch condition )) {
+            if (defined $per_line_hits->{$criterion}->[$hr_ln]) {
+                foreach my $count (@{ $per_line_hits->{$criterion}->[$hr_ln] }) {
+                    if ($count == 100) {
+                        $self->{'vcs_summary'}->{$commit_id}->{$criterion}->{'count_covered'}++;
+                    }
+                    $self->{'vcs_summary'}->{$commit_id}->{$criterion}->{'count_coverable'}++;
+                }
+            }
+        }
+
+        $ln++;
+        $hr_ln++;
+    }
 
     return;
 } # }}}
@@ -954,6 +1059,7 @@ sub make_runs_details { # {{{
             per_run_info   => { type=>HASHREF },
             source_lines   => { type=>ARRAYREF },
             item_summary   => { type=>HASHREF },
+            vcs_metadata   => { type=>HASHREF | UNDEF },
         }
     );
 
@@ -1037,6 +1143,7 @@ sub make_runs_details { # {{{
                     report_id      => $P{'digest'} . q{-} . $run,
                     source_lines   => $P{'source_lines'},
                     item_summary   => $run_summary,
+                    vcs_metadata   => $P{'vcs_metadata'},
                 );
             }
 
@@ -1084,11 +1191,18 @@ sub make_coverage_summary { # {{{
             report_id      => { type=>SCALAR },
             source_lines   => { type=>ARRAYREF },
             item_summary   => { type=>HASHREF },
+            vcs_metadata   => { type=>HASHREF | UNDEF },
         }
     );
 
     # Per-line criterions.
     my %per_line_criterions = $self->_make_per_line_criterions($P{'structure_data'}, $P{'hits'});
+
+    my @headers_order = ( 'line', @{ $self->{'criterion-order'} } );
+    if ($P{'vcs_metadata'}) {
+        push @headers_order, @{ $self->{'vcs-order'} };
+    }
+    push @headers_order, 'source';
 
     my $coverage_table = $self->{'formatter'}->add_table(
         $P{'report_id'},
@@ -1105,12 +1219,16 @@ sub make_coverage_summary { # {{{
                 'pod'        => { caption=>'POD',   f=>q{%d},    fs=>q{%.1f%%} },
                 'time'       => { caption=>'Time',  f=>q{%.3fs}, fs=>q{%.3fs} },
 
+                'vcs_rev'    => { caption=>'VCS Id', f=>q{%s}, fs=>q{%s}, class=>'vcs' },
+                'vcs_author' => { caption=>'Author', f=>q{%s}, fs=>q{%s}, class=>'vcs' },
+
                 'source' => { caption=>'Source code', f=>q{%s}, fs=>q{%s}, class=>'src' },
             },
-            headers_order => [qw( line statement branch condition subroutine pod time source )],
+            headers_order => \@headers_order,
         }
     );
 
+    my $ln    = 0; # Computer-readable line number.
     my $hr_ln = 1; # Humar-Readable Line Number
     foreach my $line (@{ $P{'source_lines'} }) {
 #        push @report_lines, q{<tr valign=top style="border: 1px solid #cccccc;">};
@@ -1170,11 +1288,18 @@ sub make_coverage_summary { # {{{
             }
         }
 
+        # Append VCS information, if available.
+        if ($P{'vcs_metadata'} and $P{'vcs_metadata'}->{'lines'}->[$ln]) {
+            $row{'vcs_rev'}    = $P{'vcs_metadata'}->{'lines'}->[$ln]->{'cid'};
+            $row{'vcs_author'} = $P{'vcs_metadata'}->{'lines'}->[$ln]->{'author'};
+        }
+
         $coverage_table->add_row(\%row);
 
+        $ln++;
         $hr_ln++;
     }
-    
+
     $coverage_table->add_summary(
         {
             'line' => $hr_ln - 1,
@@ -1553,6 +1678,36 @@ sub make_summary_report { # {{{
         item_summary => $self->{'summary'}->{'total'},
     );
 
+    # Add summary table only is:
+    #   a) VCS reporting was enabled
+    #   b) there actually WAS a VCS used...
+    if ($self->_do_vcs() and scalar keys %{ $self->{'vcs_summary'} }) {
+        my $vcs_summary = $self->{'formatter'}->add_table(
+            'Summary',
+            'VCS',
+            {
+                label   => 'Version Control System summary:',
+                headers => {
+                    'vcs'     => { caption=>'Version Control System', f=>q{%s}, fs=>q{%s} },
+                    'commits' => { caption=>'Commits',                f=>q{%d}, fs=>q{%d} },
+                },
+                headers_order => [qw( vcs commits )],
+            },
+        );
+
+        $vcs_summary->add_row(
+            {
+                vcs     => 'Commits:',
+                commits => {
+                    v    => scalar keys %{ $self->{'vcs_summary'} },
+                    href => 'vcs_report'
+                },
+            }
+        );
+
+        $self->make_vcs_commits_report();
+    }
+    
     my $covered_table = $self->{'formatter'}->add_table(
         'Summary',
         'Files',
@@ -1637,9 +1792,166 @@ sub make_summary_report { # {{{
 
     # Add total summary as well:
     $covered_table->add_summary($total_summary);
-
+    
     return $self->{'formatter'}->close_report('Summary');
 } # }}}
+
+################################################################################
+#                     Version Control System support                           #
+################################################################################
+
+# Purpose:
+#   Get metadata from Version Control System, about the file.
+#
+#   Returns undef, if the file is not controled by VCS or if metadata can not be extracted.
+# 
+# Returns:
+#   Hashref = {
+#       current => {                    # File's metadata (currently unused!)
+#           vcs    => 'git',                    # What VCS controls the file
+#           author => 'ntnl',                   # Username, that made the change
+#           cid    => '2fdddeeaa7ef5e9ddc90',   # Commit ID or Revision
+#           date   => 1278492553                # Unix timestamp, when the change was made.
+#       },
+#       lines => [                      # Per-line information (index in table = line number, counter from 0)
+#           {                               # Information about first line in the file.
+#               author => 'ntnl',
+#               cid    => '2fdddeeaa7ef5e9ddc90'
+#           },
+#           ...
+#       ],
+#   }
+#   Note: to conserve memory, references in @lines can re-use their targets, so please - clone them before doing changes!
+sub _get_vcs_metadata { # {{{
+    my ( $self, $filename ) = @_;
+
+    # Detect what VCS handles the file...
+    my ( $basedir ) = ( $filename =~ m{^(.*?)/[^/]+$}s );
+    my $vcs;
+
+    # Probe for Subversion
+    if (-d $basedir .q{/.svn}) {
+        $vcs = 'SVN';
+    }
+
+    # Probe for Git
+    my @dir_parts = split m{/}, $basedir;
+    while (1) {
+        my $tmp_path = join q{/}, @dir_parts, q{.git};
+
+        if (-d $tmp_path) {
+            $vcs = 'Git';
+            last;
+        }
+
+        if (not scalar @dir_parts) {
+            last;
+        }
+
+        shift @dir_parts;
+    }
+
+    # Not under VCS? OK - I can live with it :)
+    if (not $vcs) {
+        return;
+    }
+
+    # Try to load proper plugin...
+    my $r_path = q{Devel/CoverReport/VCS/} . $vcs .q{.pm};
+
+    require $r_path;
+    
+    # Query the plugin for data...
+    my $sub_name = q{Devel::CoverReport::VCS::} . $vcs .q{::inspect};
+
+    my $metadata = &{ \&{ $sub_name } }($filename);
+
+    if (not $metadata) {
+        return;
+    }
+
+#    use Data::Dumper; die Dumper $metadata;
+
+    foreach my $line (@{ $metadata->{'lines'} }) {
+        $self->{'vcs_cache'}->{ $line->{'_id'} } = $line;
+    }
+
+    return $metadata;
+} # }}}
+
+
+sub make_vcs_commits_report { # {{{
+    my ( $self ) = @_;
+
+    my $vcs_report = $self->{'formatter'}->add_report(
+        code     => 'VCS',
+        basename => 'vcs_report',
+        title    => 'Version Control System summary'
+    );
+
+    my $vcs_table = $self->{'formatter'}->add_table(
+        'VCS',
+        'Commits',
+        {
+            label => 'Version Control System summary:',
+
+            headers => {
+                'date'   => { caption => 'Date',   f=>q{%s}, class => 'vcs' },
+                'vcs'    => { caption => 'VCS',    f=>q{%s}, class => 'vcs' },
+                'cid'    => { caption => 'VCS Id', f=>q{%s}, class => 'vcs' },
+                'author' => { caption => 'Author', f=>q{%s}, class => 'vcs' },
+
+                'statement'  => { caption=>'St.',   f=>q{%d%%}, fs=>q{%.1f%%} },
+                'branch'     => { caption=>'Br.',   f=>q{%d%%}, fs=>q{%.1f%%} },
+                'condition'  => { caption=>'Cond.', f=>q{%d%%}, fs=>q{%.1f%%} },
+                'subroutine' => { caption=>'Sub.',  f=>q{%d%%}, fs=>q{%.1f%%} },
+                'pod'        => { caption=>'POD',   f=>q{%d%%}, fs=>q{%.1f%%} },
+
+                'time' => { caption=>'Time',  f=>q{%.3fs}, fs=>q{%.3fs} },
+            },
+            headers_order => [ 'date', 'vcs', 'cid', 'author', @{ $self->{'criterion-order'} } ],
+        }
+    );
+
+    foreach my $_id (sort {$self->{'vcs_cache'}->{$b}->{'date'} <=> $self->{'vcs_cache'}->{$a}->{'date'}} keys %{ $self->{'vcs_summary'} }) {
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $self->{'vcs_cache'}->{$_id}->{'date'};
+
+        my $date_time = sprintf q{%04d-%02d-%02d %02d:%02d:%02d}, $year+1900, $mon+1, $mday, $hour, $min, $sec;
+
+        my %row = (
+            date   => $date_time,
+            vcs    => $self->{'vcs_cache'}->{$_id}->{'vcs'},
+            cid    => $self->{'vcs_cache'}->{$_id}->{'cid'},
+#            cid => $_id,
+            author => $self->{'vcs_cache'}->{$_id}->{'author'},
+        );
+
+        foreach my $criterion (qw( statement subroutine pod branch condition time )) {
+            if ($self->{'criterion-enabled'}->{$criterion}) {
+                my $coverage = 0;
+
+                if ($self->{'vcs_summary'}->{$_id}->{$criterion}->{'count_coverable'}) {
+                    $coverage = 100 * ( $self->{'vcs_summary'}->{$_id}->{$criterion}->{'count_covered'} or 0) / $self->{'vcs_summary'}->{$_id}->{$criterion}->{'count_coverable'};
+                }
+
+                $row{$criterion} = {
+                    class => c_class($coverage),
+                    v     => $coverage,
+                };
+            }
+        }
+
+        $vcs_table->add_row(\%row);
+    }
+    
+    $self->{'formatter'}->close_report('VCS');
+
+    return;
+} # }}}
+
+################################################################################
+#                                     ...                                      #
+################################################################################
 
 # Purpose:
 #   Compare two paths. Rukes:
@@ -1675,7 +1987,7 @@ Params: C<$source>
 
 sub compute_summary { # {{{
     my ( $self, $source ) = @_;
-    
+
     assert_hashref($source, "Source must be a hashref.");
 
     # Start by checking how many non-zeros we have...
@@ -1871,11 +2183,11 @@ __END__
 
 =head1 LICENCE
 
-Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see my website: http://natanael.krakow.pl/
+For more, see my website: http://bs502.pl/
 
 =cut
 

@@ -1,17 +1,17 @@
-# Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+# Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 #
 # This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 #
-# For more, see my website: http://natanael.krakow.pl/
+# For more, see my website: http://bs502.pl/
 
 package Devel::CoverReport::App::CoverReport;
 
 use strict;
 use warnings;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
-use Devel::CoverReport 0.03;
+use Devel::CoverReport 0.04;
 
 use Carp;
 use Getopt::Long 2.36 qw( GetOptionsFromArray );
@@ -54,8 +54,8 @@ sub main { # {{{
         'verbose' => undef,
         'quiet'   => undef,
         'summary' => undef,
-        
-        'jobs' => 0,
+
+        'jobs' => 1,
 
         'cover_db'  => q{},
         'formatter' => q{},
@@ -85,7 +85,7 @@ sub main { # {{{
             version|V
             quiet|q
             summary|s
-            
+
             jobs|j=i
 
             cover_db|d=s
@@ -111,7 +111,7 @@ sub main { # {{{
         pod2usage( { -verbose => 1 } );
     }
     if ($raw_options{'version'} or $raw_options{'V'}) {
-        print "cover_report V$VERSION Copyright 2009-2010 Bartłomiej Syguła (natanael\@natanael.krakow.pl)\n";
+        print "cover_report V$VERSION Copyright 2009-2011 Bartłomiej Syguła (perl\@bs502.pl)\n";
         exit;
     }
 
@@ -177,6 +177,7 @@ sub cover_run_options { # {{{
             'coverage'    => 1,
             'runs'        => 1,
             'run-details' => 1,
+            'vcs'         => 1,
         },
     );
     foreach my $option (qw( report criterion )) {
@@ -185,7 +186,12 @@ sub cover_run_options { # {{{
             $raw_options{$option} = [ 'all' ];
         }
 
+        my @strings;
         foreach my $string (@{ $raw_options{$option} }) {
+            push @strings, ( split m{\,[\s]*}s, $string );
+        }
+
+        foreach my $string (@strings) {
             if ($string eq 'all') {
                 foreach my $_string (keys %{ $allowed_selections{$option} }) {
                     $run_options{$option}->{ $_string } = 2;
@@ -234,11 +240,11 @@ sub cover_run_options { # {{{
 
 =head1 LICENCE
 
-Copyright 2009-2010, Bartłomiej Syguła (natanael@natanael.krakow.pl)
+Copyright 2009-2011, Bartłomiej Syguła (perl@bs502.pl)
 
 This is free software. It is licensed, and can be distributed under the same terms as Perl itself.
 
-For more, see my website: http://natanael.krakow.pl/
+For more, see my website: http://bs502.pl/
 
 =cut
 
